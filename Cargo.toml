@@ -1,0 +1,22 @@
+[package]
+name = "plant-track"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "server"
+path = "src/api/server.rs"
+
+[[bin]]
+name = "lambda"
+path = "src/api/lambda.rs"
+
+[dependencies]
+chrono = "0.4.38"
+aws-sdk-dynamodb = "1.27.0"
+aws-config = "1.4.0"
+random-string = "1.1.0"
+
+[dependencies.rocket]
+version = "0.5.0"
+features = ["json"]

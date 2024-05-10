@@ -1,0 +1,18 @@
+version: "3.2"
+services:
+  localstack:
+    image: localstack/localstack:3.1.0
+    ports:
+      - 4566:4566
+    volumes:
+      - "${PWD}/environment/localstack/init:/etc/localstack/init"
+    environment:
+      SERVICES: "s3,dynamodb"
+      AWS_DEFAULT_REGION: "eu-west-2"
+      LOCALSTACK_HOST: 127.0.0.1
+    healthcheck:
+      test: 'curl -s localhost:4566/_localstack/init | grep -q ''"READY": true'''
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 40s
