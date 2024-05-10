@@ -1,4 +1,7 @@
-use rocket::serde::{json::Json, Deserialize};
+use rocket::{
+    response::status::Unauthorized,
+    serde::{json::Json, Deserialize, Serialize},
+};
 mod db;
 mod handlers;
 mod types;
@@ -33,13 +36,27 @@ struct LoginData {
     password: String,
 }
 
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct ErrorResponse {
+    pub message: String,
+}
+
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct LoginResponse {
+    pub token: String,
+}
+
 #[post("/login", data = "<login_data>")]
-async fn login(login_data: Json<LoginData>) -> String {
+async fn login(
+    login_data: Json<LoginData>,
+) -> Result<Json<LoginResponse>, Unauthorized<Json<ErrorResponse>>> {
     let result: Result<String, String> =
         handlers::login::login(login_data.email.clone(), login_data.password.clone()).await;
     match result {
-        Ok(token) => token,
-        Err(e) => e,
+        Ok(token) => Ok(Json(LoginResponse { token })),
+        Err(e) => Err(Unauthorized(Json(ErrorResponse { message: e }))),
     }
 }
 
