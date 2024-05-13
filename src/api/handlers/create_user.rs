@@ -16,7 +16,7 @@ pub async fn create_user(user: &User) -> Result<(), String> {
         .item("name", AttributeValue::S(user.name.clone()))
         .item("email", AttributeValue::S(user.email.clone()))
         .item("password", AttributeValue::S(user.password.clone()))
-        .item("created", AttributeValue::S(user.created.to_string()))
+        .item("created", AttributeValue::S(user.created.to_rfc3339()))
         .item("validated", AttributeValue::Bool(user.validated))
         .item("contact", AttributeValue::Bool(user.contact));
 

@@ -12,7 +12,7 @@ name = "lambda"
 path = "src/api/lambda.rs"
 
 [dependencies]
-chrono = "0.4.38"
+chrono = { version = "0.4.38", features = ["serde"] }
 aws-sdk-dynamodb = "1.27.0"
 aws-config = "1.4.0"
 random-string = "1.1.0"

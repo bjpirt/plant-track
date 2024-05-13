@@ -5,7 +5,7 @@ use rocket::{
 mod db;
 mod handlers;
 mod types;
-use types::user::User;
+use types::{plant::Plant, plant_input::PlantInput, user::User};
 
 #[macro_use]
 extern crate rocket;
@@ -48,7 +48,7 @@ pub struct LoginResponse {
     pub token: String,
 }
 
-#[post("/login", data = "<login_data>")]
+#[post("/users/login", data = "<login_data>")]
 async fn login(
     login_data: Json<LoginData>,
 ) -> Result<Json<LoginResponse>, Unauthorized<Json<ErrorResponse>>> {
@@ -60,9 +60,23 @@ async fn login(
     }
 }
 
+#[post("/users/<username>/plants", data = "<plant_input>")]
+async fn create_plant(
+    username: &str,
+    plant_input: Json<PlantInput>,
+) -> Result<Json<Plant>, Unauthorized<Json<ErrorResponse>>> {
+    let result: Result<Plant, String> =
+        handlers::create_plant::create_plant(username, &plant_input).await;
+    match result {
+        Ok(plant) => Ok(Json(plant)),
+        Err(e) => Err(Unauthorized(Json(ErrorResponse { message: e }))),
+    }
+}
+
 #[launch]
 fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![create_user])
         .mount("/", routes![login])
+        .mount("/", routes![create_plant])
 }
