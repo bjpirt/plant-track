@@ -1,61 +1,36 @@
-use rocket::{
-    response::status::Unauthorized,
-    serde::{json::Json, Deserialize, Serialize},
-};
+use db::dynamo_gateway::DynamoGateway;
+use rocket::{response::status::Unauthorized, serde::json::Json};
 mod db;
 mod handlers;
 mod types;
-use types::{plant::Plant, plant_input::PlantInput, user::User};
+use types::{
+    error_response::ErrorResponse, login_input::LoginInput, login_response::LoginResponse,
+    plant::Plant, plant_input::PlantInput, user::User, user_input::UserInput,
+};
 
 #[macro_use]
 extern crate rocket;
 
-#[derive(Deserialize)]
-#[serde(crate = "rocket::serde")]
-struct IncomingUser {
-    username: String,
-    name: String,
-    password: String,
-    email: String,
-}
-
-#[post("/users", data = "<user>")]
-async fn create_user(user: Json<IncomingUser>) -> String {
-    let new_user: User = User::new(&user.username, &user.name, &user.email, &user.password);
-    let result: Result<(), String> = handlers::create_user::create_user(&new_user).await;
+#[post("/users", data = "<user_input>")]
+async fn create_user(user_input: Json<UserInput>) -> Result<Json<User>, String> {
+    let dynamo_gateway: DynamoGateway = DynamoGateway::new().await;
+    let result: Result<types::user::User, String> =
+        handlers::create_user::create_user(&user_input, &dynamo_gateway).await;
     match result {
-        Ok(()) => format!("Hello, {0} ({1})!", new_user.name, new_user.username),
-        Err(e) => e,
+        Ok(user) => Ok(Json(user)),
+        Err(e) => Err(e),
     }
 }
 
-#[derive(Deserialize)]
-#[serde(crate = "rocket::serde")]
-struct LoginData {
-    email: String,
-    password: String,
-}
-
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-pub struct ErrorResponse {
-    pub message: String,
-}
-
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-pub struct LoginResponse {
-    pub token: String,
-}
-
-#[post("/users/login", data = "<login_data>")]
+#[post("/users/login", data = "<login_input>")]
 async fn login(
-    login_data: Json<LoginData>,
+    login_input: Json<LoginInput>,
 ) -> Result<Json<LoginResponse>, Unauthorized<Json<ErrorResponse>>> {
-    let result: Result<String, String> =
-        handlers::login::login(login_data.email.clone(), login_data.password.clone()).await;
+    let dynamo_gateway: DynamoGateway = DynamoGateway::new().await;
+    let result: Result<LoginResponse, String> =
+        handlers::login::login(&login_input.email, &login_input.password, &dynamo_gateway).await;
     match result {
-        Ok(token) => Ok(Json(LoginResponse { token })),
+        Ok(token) => Ok(Json(token)),
         Err(e) => Err(Unauthorized(Json(ErrorResponse { message: e }))),
     }
 }
@@ -65,8 +40,9 @@ async fn create_plant(
     username: &str,
     plant_input: Json<PlantInput>,
 ) -> Result<Json<Plant>, Unauthorized<Json<ErrorResponse>>> {
+    let dynamo_gateway: DynamoGateway = DynamoGateway::new().await;
     let result: Result<Plant, String> =
-        handlers::create_plant::create_plant(username, &plant_input).await;
+        handlers::create_plant::create_plant(username, &plant_input, &dynamo_gateway).await;
     match result {
         Ok(plant) => Ok(Json(plant)),
         Err(e) => Err(Unauthorized(Json(ErrorResponse { message: e }))),
