@@ -2,7 +2,11 @@ use db::dynamo_gateway::DynamoGateway;
 use rocket::{response::status::Unauthorized, serde::json::Json};
 mod db;
 mod handlers;
+mod jwt;
 mod types;
+use jwt::validate_token::validate_token;
+use rocket_authorization::oauth::OAuth;
+use rocket_authorization::Credential;
 use types::{
     error_response::ErrorResponse, login_input::LoginInput, login_response::LoginResponse,
     plant::Plant, plant_input::PlantInput, user::User, user_input::UserInput,
@@ -39,13 +43,22 @@ async fn login(
 async fn create_plant(
     username: &str,
     plant_input: Json<PlantInput>,
+    auth: Credential<OAuth>,
 ) -> Result<Json<Plant>, Unauthorized<Json<ErrorResponse>>> {
     let dynamo_gateway: DynamoGateway = DynamoGateway::new().await;
-    let result: Result<Plant, String> =
-        handlers::create_plant::create_plant(username, &plant_input, &dynamo_gateway).await;
-    match result {
-        Ok(plant) => Ok(Json(plant)),
+
+    let user = validate_token(&auth.token, &username.to_string(), &dynamo_gateway).await;
+
+    match user {
         Err(e) => Err(Unauthorized(Json(ErrorResponse { message: e }))),
+        Ok(user) => {
+            let result: Result<Plant, String> =
+                handlers::create_plant::create_plant(&user, &plant_input, &dynamo_gateway).await;
+            match result {
+                Ok(plant) => Ok(Json(plant)),
+                Err(e) => Err(Unauthorized(Json(ErrorResponse { message: e }))),
+            }
+        }
     }
 }
 
