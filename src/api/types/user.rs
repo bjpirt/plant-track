@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
-use random_string::generate;
 use serde::Serialize;
 
-#[derive(Serialize)]
+use crate::lib::random_id::random_id;
+
+#[derive(PartialEq, Serialize, Debug)]
 pub struct User {
     pub id: String,
     pub username: String,
@@ -15,14 +16,13 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(username: &String, name: &String, email: &String, password: &String) -> Self {
-        let charset: &str = "abcdefghjklmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    pub fn new(username: &str, name: &str, email: &str, password: &str) -> Self {
         Self {
-            id: generate(20, charset),
-            username: username.clone(),
-            name: name.clone(),
-            email: email.clone(),
-            password: password.clone(),
+            id: random_id(20),
+            username: username.to_string(),
+            name: name.to_string(),
+            email: email.to_string(),
+            password: password.to_string(),
             created: Utc::now(),
             validated: false,
             contact: true,

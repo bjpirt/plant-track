@@ -107,6 +107,40 @@ impl BaseGateway for DynamoGateway {
         }
     }
 
+    #[cfg(test)]
+    async fn get_user(&self, user_id: &str) -> Result<User, String> {
+        let res = self
+            .client
+            .get_item()
+            .table_name("users")
+            .key("id", AttributeValue::S(user_id.to_string()))
+            .send()
+            .await;
+
+        if let Ok(res) = res {
+            if let Some(item) = res.item {
+                let found_user = panic::catch_unwind(|| User {
+                    id: item.get("id").unwrap().as_s().unwrap().clone(),
+                    username: item.get("username").unwrap().as_s().unwrap().clone(),
+                    name: item.get("name").unwrap().as_s().unwrap().clone(),
+                    email: item.get("email").unwrap().as_s().unwrap().clone(),
+                    password: item.get("password").unwrap().as_s().unwrap().clone(),
+                    created: DateTime::parse_from_rfc3339(
+                        item.get("created").unwrap().as_s().unwrap(),
+                    )
+                    .unwrap()
+                    .into(),
+                    validated: item.get("validated").unwrap().as_bool().unwrap().clone(),
+                    contact: item.get("contact").unwrap().as_bool().unwrap().clone(),
+                });
+                if let Ok(found_user) = found_user {
+                    return Ok(found_user);
+                }
+            }
+        }
+        Err("Could not find user".to_string())
+    }
+
     async fn get_user_by_username(&self, username: &String) -> Result<User, String> {
         self.get_user_from_index("usernameIndex", "username", username)
             .await
@@ -125,7 +159,7 @@ impl BaseGateway for DynamoGateway {
             .item("user_id", AttributeValue::S(plant.user_id.clone()))
             .item("name", AttributeValue::S(plant.name.clone()))
             .item("species", AttributeValue::S(plant.species.clone()))
-            .item("created", AttributeValue::S(plant.created.to_string()));
+            .item("created", AttributeValue::S(plant.created.to_rfc3339()));
 
         let res = request.send().await;
 
@@ -133,5 +167,80 @@ impl BaseGateway for DynamoGateway {
             Ok(_) => Ok(()),
             Err(_) => Err(String::from("Error creating plant for user")),
         }
+    }
+
+    #[cfg(test)]
+    async fn get_plant(&self, plant_id: &str) -> Result<Plant, String> {
+        let res = self
+            .client
+            .get_item()
+            .table_name("plants")
+            .key("id", AttributeValue::S(plant_id.to_string()))
+            .send()
+            .await;
+
+        if let Ok(res) = res {
+            if let Some(item) = res.item {
+                let plant = panic::catch_unwind(|| Plant {
+                    id: item.get("id").unwrap().as_s().unwrap().clone(),
+                    user_id: item.get("user_id").unwrap().as_s().unwrap().clone(),
+                    name: item.get("name").unwrap().as_s().unwrap().clone(),
+                    species: item.get("species").unwrap().as_s().unwrap().clone(),
+                    created: DateTime::parse_from_rfc3339(
+                        item.get("created").unwrap().as_s().unwrap(),
+                    )
+                    .unwrap()
+                    .into(),
+                });
+                if let Ok(plant) = plant {
+                    return Ok(plant);
+                }
+            }
+        }
+        return Err("Could not find plant".to_string());
+    }
+
+    #[cfg(test)]
+    async fn get_plants_by_user(&self, user_id: &str) -> Result<Vec<Plant>, String> {
+        use std::error::Error;
+
+        let result = self
+            .client
+            .query()
+            .table_name(String::from("plants"))
+            .index_name("useridIndex")
+            .key_condition_expression(format!("user_id = :value"))
+            .expression_attribute_values(":value", AttributeValue::S(user_id.to_string()))
+            .send()
+            .await;
+
+        if let Ok(result) = result {
+            println!("Result was OK");
+            if let Some(items) = result.items {
+                println!("Items was OK");
+                let plants = panic::catch_unwind(|| {
+                    items
+                        .iter()
+                        .map(|i| Plant {
+                            id: i.get("id").unwrap().as_s().unwrap().clone(),
+                            user_id: i.get("user_id").unwrap().as_s().unwrap().clone(),
+                            name: i.get("name").unwrap().as_s().unwrap().clone(),
+                            species: i.get("species").unwrap().as_s().unwrap().clone(),
+                            created: DateTime::parse_from_rfc3339(
+                                i.get("created").unwrap().as_s().unwrap(),
+                            )
+                            .unwrap()
+                            .into(),
+                        })
+                        .collect()
+                });
+                if let Ok(plants) = plants {
+                    println!("Plants was OK");
+                    return Ok(plants);
+                }
+            }
+        }
+
+        return Err("Error fetching plants for user".to_string());
     }
 }

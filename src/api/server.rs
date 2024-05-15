@@ -3,6 +3,7 @@ use rocket::{response::status::Unauthorized, serde::json::Json};
 mod db;
 mod handlers;
 mod jwt;
+mod lib;
 mod types;
 use jwt::validate_token::validate_token;
 use rocket_authorization::oauth::OAuth;

@@ -26,7 +26,15 @@ awslocal dynamodb create-table --region $AWS_REGION --table-name users \
 
 awslocal dynamodb create-table --region $AWS_REGION --table-name plants \
   --attribute-definitions '[{ "AttributeName": "id", "AttributeType": "S" },
-    { "AttributeName": "email", "AttributeType": "S" }]' \
+    { "AttributeName": "user_id", "AttributeType": "S" }]' \
   --key-schema '[{ "AttributeName": "id", "KeyType": "HASH" }]' \
   --billing-mode PAY_PER_REQUEST \
-  --global-secondary-indexes '[]'
+  --global-secondary-indexes '[
+    {
+      "IndexName": "useridIndex",
+      "Projection": { "ProjectionType": "ALL" },
+      "KeySchema": [
+        {"AttributeName": "user_id", "KeyType": "HASH"}
+      ]
+    }
+  ]'

@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
-use random_string::generate;
 use serde::Serialize;
 
-#[derive(Serialize)]
+use crate::lib::random_id::random_id;
+
+#[derive(Serialize, PartialEq, Debug)]
 pub struct Plant {
     pub id: String,
     pub user_id: String,
@@ -12,13 +13,12 @@ pub struct Plant {
 }
 
 impl Plant {
-    pub fn new(name: &String, species: &String, user_id: &String) -> Self {
-        let charset: &str = "abcdefghjklmnpqrstuvwxyz23456789";
+    pub fn new(name: &str, species: &str, user_id: &str) -> Self {
         Self {
-            id: generate(10, charset),
-            user_id: user_id.clone(),
-            name: name.clone(),
-            species: species.clone(),
+            id: random_id(10),
+            user_id: user_id.to_string(),
+            name: name.to_string(),
+            species: species.to_string(),
             created: Utc::now(),
         }
     }
