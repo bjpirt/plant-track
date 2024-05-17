@@ -202,8 +202,6 @@ impl BaseGateway for DynamoGateway {
 
     #[cfg(test)]
     async fn get_plants_by_user(&self, user_id: &str) -> Result<Vec<Plant>, String> {
-        use std::error::Error;
-
         let result = self
             .client
             .query()

@@ -23,7 +23,7 @@ mod tests {
         db::{base_gateway::BaseGateway, dynamo_gateway::DynamoGateway},
         handlers::create_plant::create_plant,
         lib::random_id::random_id,
-        types::{plant::Plant, plant_input::PlantInput, user::User},
+        types::{plant_input::PlantInput, user::User},
     };
 
     #[async_test]
